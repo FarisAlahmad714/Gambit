@@ -96,5 +96,57 @@ http.listen(3000, function () {
         }
       );
     });
+    app.get("/login", function (request, result) {
+      result.render("login");
+    });
+    app.post("/signup", function (request, result) {
+      var email = request.fields.email;
+      var password = request.fields.password;
+      database.collection("users").findOne(
+        {
+          email: email,
+        },
+        function (error, user) {
+          if ((user = null)) {
+            result.json({
+              status: "error",
+              message: "Email does not exist",
+            });
+          } else {
+            bcrypt.compare(password, user.password, function (error, isVerify) {
+              if (isVerify) {
+                var accessToken = jwt.sign({ email: email }, accessTokenSecret);
+                database.collection("users").findOneAndUpdate(
+                  {
+                    email: email,
+                  },
+                  {
+                    $set: {
+                      accessToken: accessToken,
+                    },
+                  },
+                  function (error, data) {
+                    result.json({
+                      status: "success",
+                      message: "Successfully logged in",
+                      accessToken: "accessToken",
+                      profileImage: "user.profileImage",
+                    });
+                  }
+                );
+              } else {
+                result.json({
+                  status: "error",
+                  message: "Incorrect password , try again ",
+                });
+              }
+            });
+          }
+        }
+      );
+    });
+    app.get("/updateProfile", function (request, result) {
+      result.render("updateProfile");
+    });
   });
 });
